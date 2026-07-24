@@ -32,7 +32,7 @@ export async function PUT(req: Request) {
 
   const body = await req.json();
   const existing = await getCoupleForUser(userId);
-  if (!existing || existing.userId !== userId)
+  if (!existing)
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const couple = await prisma.couple.update({

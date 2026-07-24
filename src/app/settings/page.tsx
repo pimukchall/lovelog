@@ -168,7 +168,7 @@ export default function SettingsPage() {
         <h2 className="font-semibold" style={{ color: "var(--foreground)" }}>ข้อมูลคู่รัก</h2>
 
         {/* Profile photos */}
-        {isOwner && (
+        {hasCouple && (
           <div className="flex items-end gap-6">
             <div className="text-center space-y-1">
               {avatarInput("p1")}
