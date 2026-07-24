@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 import crypto from "crypto";
-import { forgotRatelimit } from "@/lib/ratelimit";
+import { getForgotRatelimit } from "@/lib/ratelimit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for") ?? "anonymous";
-  const { success } = await forgotRatelimit.limit(ip);
+  const { success } = await getForgotRatelimit().limit(ip);
   if (!success) return NextResponse.json({ error: "ส่งได้สูงสุด 3 ครั้งต่อ 10 นาที" }, { status: 429 });
 
   const { email } = await req.json();
