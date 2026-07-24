@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, Images, Clock, TreePine, Settings } from "lucide-react";
+import { Heart, Images, Clock, TreePine, Settings, BookOpen } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 
 const links = [
   { href: "/", label: "Home", icon: Heart },
+  { href: "/posts", label: "Posts", icon: BookOpen },
   { href: "/timeline", label: "Timeline", icon: Clock },
   { href: "/gallery", label: "Gallery", icon: Images },
   { href: "/family", label: "Family", icon: TreePine },
