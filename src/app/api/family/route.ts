@@ -23,6 +23,11 @@ export async function POST(req: Request) {
   if (!userId) return NextResponse.json(null, { status: 401 });
 
   const body = await req.json();
+  const couple = await prisma.couple.findFirst({
+    where: { id: body.coupleId, OR: [{ userId }, { partnerUserId: userId }] },
+  });
+  if (!couple) return NextResponse.json(null, { status: 403 });
+
   const count = await prisma.familyMember.count({ where: { coupleId: body.coupleId } });
   const member = await prisma.familyMember.create({
     data: {
@@ -41,6 +46,13 @@ export async function PUT(req: Request) {
   if (!userId) return NextResponse.json(null, { status: 401 });
 
   const body = await req.json();
+  const existing = await prisma.familyMember.findUnique({ where: { id: body.id }, include: { couple: true } });
+  if (!existing) return NextResponse.json(null, { status: 404 });
+  const c = existing.couple;
+  if (!c || (c.userId !== userId && c.partnerUserId !== userId)) {
+    return NextResponse.json(null, { status: 403 });
+  }
+
   const member = await prisma.familyMember.update({
     where: { id: body.id },
     data: {

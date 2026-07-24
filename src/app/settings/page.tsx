@@ -21,11 +21,12 @@ export default function SettingsPage() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
+    if (!session) return;
     fetch("/api/couple").then((r) => r.json()).then((d) => {
       if (!d) return;
       setHasCouple(true);
       setForm({ id: d.id, person1Name: d.person1Name, person2Name: d.person2Name, startDate: d.startDate?.split("T")[0] || "" });
-      setIsOwner(d.userId === session?.user?.id);
+      setIsOwner(d.userId === session.user?.id);
       setPartnerLinked(!!d.partnerUserId);
     });
   }, [session]);

@@ -25,6 +25,11 @@ export async function POST(req: Request) {
   if (!userId) return NextResponse.json(null, { status: 401 });
 
   const body = await req.json();
+  const couple = await prisma.couple.findFirst({
+    where: { id: body.coupleId, OR: [{ userId }, { partnerUserId: userId }] },
+  });
+  if (!couple) return NextResponse.json(null, { status: 403 });
+
   const memory = await prisma.memory.create({
     data: {
       coupleId: body.coupleId,

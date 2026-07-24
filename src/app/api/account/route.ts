@@ -11,22 +11,24 @@ export async function DELETE() {
 
   // ถ้าเป็นเจ้าของ → ลบทุกอย่างที่เกี่ยวกับ couple ด้วย
   if (couple && couple.userId === userId) {
-    // ลบไฟล์ใน Cloudinary
+    // เก็บ publicIds ก่อนลบ DB
     const photos = await prisma.photo.findMany({ where: { coupleId: couple.id } });
     const members = await prisma.familyMember.findMany({ where: { coupleId: couple.id } });
+    const publicIds = [
+      ...photos.map((p) => p.publicId),
+      ...members.filter((m) => m.publicId).map((m) => m.publicId!),
+      ...(couple.person1PublicId ? [couple.person1PublicId] : []),
+      ...(couple.person2PublicId ? [couple.person2PublicId] : []),
+    ];
 
-    await Promise.allSettled([
-      ...photos.map((p) => cloudinary.uploader.destroy(p.publicId)),
-      ...members.filter((m) => m.publicId).map((m) => cloudinary.uploader.destroy(m.publicId!)),
-      couple.person1PublicId && cloudinary.uploader.destroy(couple.person1PublicId),
-      couple.person2PublicId && cloudinary.uploader.destroy(couple.person2PublicId),
-    ]);
-
-    // ลบ cascade ใน DB
+    // ลบ DB ก่อน — ถ้าพังหยุดได้ก่อน Cloudinary สูญเสียไฟล์
     await prisma.photo.deleteMany({ where: { coupleId: couple.id } });
     await prisma.memory.deleteMany({ where: { coupleId: couple.id } });
     await prisma.familyMember.deleteMany({ where: { coupleId: couple.id } });
     await prisma.couple.delete({ where: { id: couple.id } });
+
+    // ลบ Cloudinary หลัง DB สำเร็จ
+    await Promise.allSettled(publicIds.map((id) => cloudinary.uploader.destroy(id)));
   } else if (couple && couple.partnerUserId === userId) {
     // เป็นแค่ partner → ตัดตัวเองออกจาก couple
     await prisma.couple.update({

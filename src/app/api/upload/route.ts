@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import cloudinary from "@/lib/cloudinary";
+import { getSessionUserId } from "@/lib/coupleAuth";
 
 export async function POST(req: Request) {
+  const userId = await getSessionUserId();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const formData = await req.formData();
   const file = formData.get("file") as File;
   if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });

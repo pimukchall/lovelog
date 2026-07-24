@@ -36,7 +36,7 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const couple = await prisma.couple.update({
-    where: { id: body.id },
+    where: { id: existing.id },
     data: {
       ...(body.person1Name !== undefined && { person1Name: body.person1Name }),
       ...(body.person2Name !== undefined && { person2Name: body.person2Name }),

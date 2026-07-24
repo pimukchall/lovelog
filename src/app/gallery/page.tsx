@@ -17,6 +17,8 @@ export default function GalleryPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const loadingMoreRef = useRef(false);
+  const nextCursorRef = useRef<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [pending, setPending] = useState<{ url: string; publicId: string } | null>(null);
   const [caption, setCaption] = useState("");
@@ -39,28 +41,32 @@ export default function GalleryPage() {
         const data = await fetchPhotos(d.id);
         setPhotos(data.photos);
         setNextCursor(data.nextCursor);
+        nextCursorRef.current = data.nextCursor;
       }
       setLoading(false);
     });
   }, [fetchPhotos]);
 
-  // Infinite scroll observer
+  // Infinite scroll observer — use refs to avoid stale closures and unnecessary reconnects
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el || !coupleId) return;
 
     const observer = new IntersectionObserver(async (entries) => {
-      if (!entries[0].isIntersecting || loadingMore || !nextCursor) return;
+      if (!entries[0].isIntersecting || loadingMoreRef.current || !nextCursorRef.current) return;
+      loadingMoreRef.current = true;
       setLoadingMore(true);
-      const data = await fetchPhotos(coupleId, nextCursor);
+      const data = await fetchPhotos(coupleId, nextCursorRef.current);
       setPhotos(prev => [...prev, ...data.photos]);
+      nextCursorRef.current = data.nextCursor;
       setNextCursor(data.nextCursor);
+      loadingMoreRef.current = false;
       setLoadingMore(false);
     }, { threshold: 0.1 });
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [coupleId, nextCursor, loadingMore, fetchPhotos]);
+  }, [coupleId, fetchPhotos]);
 
   async function addPhoto(e: React.FormEvent) {
     e.preventDefault();

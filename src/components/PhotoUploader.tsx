@@ -38,6 +38,7 @@ export default function PhotoUploader({ onUpload, label = "Upload Photo", previe
     try {
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Upload failed");
       setProgress(100);
       setTimeout(() => setProgress(0), 500);
       onUpload(data);
