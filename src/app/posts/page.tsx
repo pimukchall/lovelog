@@ -32,41 +32,68 @@ interface Post {
   reactions: PostReaction[];
 }
 
-const EMOJIS = ["❤️", "😊", "😂", "😢", "😮", "🥰"];
+const EMOJIS = ["❤️", "😊", "😂", "😢", "😮", "🥰", "😡"];
 
-function EmojiPicker({ onSelect }: { onSelect: (emoji: string) => void }) {
+function ReactionButton({ myReaction, reactions, onSelect }: {
+  myReaction?: string;
+  reactions: PostReaction[];
+  onSelect: (emoji: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
+  // นับ reactions แยกตาม emoji
+  const counts: Record<string, number> = {};
+  for (const r of reactions) counts[r.emoji] = (counts[r.emoji] ?? 0) + 1;
+  const total = reactions.length;
+
   return (
-    <div ref={ref} className="relative">
-      <button type="button" onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-sm transition-all hover:bg-white/5"
-        style={{ border: "1px solid var(--glass-border)", color: "var(--muted)" }}>
-        + 😊
-      </button>
-      {open && (
-        <div className="absolute bottom-full left-0 mb-2 flex gap-1 p-2 rounded-xl shadow-xl z-20"
-          style={{ background: "var(--nav-bg)", border: "1px solid var(--glass-border)" }}>
-          {EMOJIS.map(emoji => (
-            <button type="button" key={emoji}
-              onClick={() => { onSelect(emoji); setOpen(false); }}
-              className="text-xl hover:scale-125 transition-transform p-0.5">
-              {emoji}
-            </button>
-          ))}
-        </div>
+    <div ref={ref} className="flex items-center gap-2 flex-wrap">
+      {/* ปุ่มหลัก — แสดง emoji ของตัวเองหรือ default */}
+      <div className="relative">
+        <button type="button" onClick={() => setOpen(v => !v)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all"
+          style={{
+            background: myReaction ? "color-mix(in srgb, var(--accent) 15%, transparent)" : "var(--input-bg)",
+            border: `1px solid ${myReaction ? "var(--accent)" : "var(--glass-border)"}`,
+            color: myReaction ? "var(--accent)" : "var(--muted)",
+          }}>
+          <span>{myReaction ?? "😊"}</span>
+          <span>{myReaction ? "รู้สึก" : "รู้สึก..."}</span>
+        </button>
+
+        {/* Picker */}
+        {open && (
+          <div className="absolute bottom-full left-0 mb-2 flex gap-1 p-2 rounded-2xl shadow-2xl z-20"
+            style={{ background: "var(--nav-bg)", border: "1px solid var(--glass-border)" }}>
+            {EMOJIS.map(emoji => (
+              <button type="button" key={emoji}
+                onClick={() => { onSelect(emoji); setOpen(false); }}
+                className={`text-2xl p-1 rounded-full transition-all hover:scale-125 hover:bg-white/10 ${myReaction === emoji ? "scale-125 bg-white/10" : ""}`}>
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* แสดง emoji ที่มี + จำนวน */}
+      {Object.entries(counts).map(([emoji, count]) => (
+        <span key={emoji} className="text-sm flex items-center gap-0.5" style={{ color: "var(--muted)" }}>
+          {emoji} {count}
+        </span>
+      ))}
+      {total > 0 && (
+        <span className="text-xs" style={{ color: "var(--muted-subtle)" }}>({total})</span>
       )}
     </div>
   );
@@ -137,13 +164,13 @@ export default function PostsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ postId, emoji }),
     });
-    const { action } = await res.json();
+    const data = await res.json();
     setPosts(prev => prev.map(p => {
       if (p.id !== postId) return p;
-      if (action === "added") {
-        return { ...p, reactions: [...p.reactions, { id: Date.now().toString(), authorId: myId!, emoji }] };
-      }
-      return { ...p, reactions: p.reactions.filter(r => !(r.authorId === myId && r.emoji === emoji)) };
+      // ลบ reaction เก่าของ user ก่อน
+      const withoutMine = p.reactions.filter(r => r.authorId !== myId);
+      if (data.action === "removed") return { ...p, reactions: withoutMine };
+      return { ...p, reactions: [...withoutMine, { id: Date.now().toString(), authorId: myId!, emoji }] };
     }));
   }
 
@@ -169,15 +196,6 @@ export default function PostsPage() {
       : p));
   }
 
-  function reactionSummary(reactions: PostReaction[]) {
-    const counts: Record<string, { count: number; mine: boolean }> = {};
-    for (const r of reactions) {
-      if (!counts[r.emoji]) counts[r.emoji] = { count: 0, mine: false };
-      counts[r.emoji].count++;
-      if (r.authorId === myId) counts[r.emoji].mine = true;
-    }
-    return counts;
-  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
@@ -258,7 +276,6 @@ export default function PostsPage() {
         ))}
 
         {!loading && posts.map(post => {
-          const summary = reactionSummary(post.reactions);
           return (
             <div key={post.id} className="glass rounded-2xl p-5 space-y-4 group">
               {/* Header */}
@@ -288,22 +305,11 @@ export default function PostsPage() {
               )}
 
               {/* Reactions */}
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Existing reactions */}
-                {Object.entries(summary).map(([emoji, { count, mine }]) => (
-                  <button key={emoji} onClick={() => toggleReaction(post.id, emoji)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-sm transition-all"
-                    style={{
-                      background: mine ? "color-mix(in srgb, var(--accent) 20%, transparent)" : "var(--input-bg)",
-                      border: `1px solid ${mine ? "var(--accent)" : "var(--glass-border)"}`,
-                    }}>
-                    <span>{emoji}</span>
-                    <span className="text-xs" style={{ color: "var(--muted)" }}>{count}</span>
-                  </button>
-                ))}
-                {/* Add reaction picker */}
-                <EmojiPicker onSelect={(emoji) => toggleReaction(post.id, emoji)} />
-              </div>
+              <ReactionButton
+                myReaction={post.reactions.find(r => r.authorId === myId)?.emoji}
+                reactions={post.reactions}
+                onSelect={(emoji) => toggleReaction(post.id, emoji)}
+              />
 
               {/* Comments */}
               <div className="space-y-2 pt-1 border-t" style={{ borderColor: "var(--glass-border)" }}>
