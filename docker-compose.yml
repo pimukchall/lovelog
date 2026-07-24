@@ -1,0 +1,36 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: pimuk-dna-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: pimuk_dna
+      MYSQL_USER: pimuk
+      MYSQL_PASSWORD: pimukpassword
+    ports:
+      - "3311:3306"
+    volumes:
+      - pimuk_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: pimuk-dna-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: password
+    ports:
+      - "8085:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  pimuk_mysql_data:

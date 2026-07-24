@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  passwordHash    String
+  createdAt       DateTime @default(now())
+  ownedCouples    Couple[] @relation("CoupleOwner")
+  partnerInCouple Couple[] @relation("CouplePartner")
+}
+
+model Couple {
+  id              String         @id @default(cuid())
+  userId          String
+  user            User           @relation("CoupleOwner", fields: [userId], references: [id])
+  partnerUserId   String?
+  partner         User?          @relation("CouplePartner", fields: [partnerUserId], references: [id])
+  inviteToken     String?        @unique
+  person1Name     String
+  person2Name     String
+  person1PhotoUrl String?
+  person1PublicId String?
+  person2PhotoUrl String?
+  person2PublicId String?
+  startDate       DateTime
+  createdAt       DateTime       @default(now())
+  photos          Photo[]
+  memories        Memory[]
+  familyMembers   FamilyMember[]
+}
+
+model Photo {
+  id        String    @id @default(cuid())
+  coupleId  String
+  couple    Couple    @relation(fields: [coupleId], references: [id])
+  url       String
+  publicId  String
+  caption   String?
+  takenAt   DateTime?
+  createdAt DateTime  @default(now())
+  memoryId  String?
+  memory    Memory?   @relation(fields: [memoryId], references: [id])
+}
+
+model Memory {
+  id          String   @id @default(cuid())
+  coupleId    String
+  couple      Couple   @relation(fields: [coupleId], references: [id])
+  title       String
+  description String?  @db.Text
+  date        DateTime
+  type        String   @default("moment")
+  createdAt   DateTime @default(now())
+  photos      Photo[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model FamilyMember {
+  id        String   @id @default(cuid())
+  coupleId  String
+  couple    Couple   @relation(fields: [coupleId], references: [id])
+  name      String
+  photoUrl  String?
+  publicId  String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
