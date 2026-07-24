@@ -23,6 +23,7 @@ const TYPE_ICONS: Record<string, string> = {
 export default function TimelinePage() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [coupleId, setCoupleId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", date: "", type: "moment" });
   const [pendingPhoto, setPendingPhoto] = useState<{ url: string; publicId: string } | null>(null);
@@ -32,7 +33,12 @@ export default function TimelinePage() {
     fetch("/api/couple").then(r => r.json()).then(d => {
       if (d?.id) {
         setCoupleId(d.id);
-        fetch(`/api/memories?coupleId=${d.id}`).then(r => r.json()).then(setMemories);
+        fetch(`/api/memories?coupleId=${d.id}`).then(r => r.json()).then(data => {
+          setMemories(data);
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
       }
     });
   }, []);
@@ -134,7 +140,17 @@ export default function TimelinePage() {
       <div className="relative">
         <div className="absolute left-6 top-0 bottom-0 w-0.5 timeline-line" />
         <div className="space-y-8">
-          {memories.map((m) => (
+          {loading && Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="relative pl-14 animate-pulse">
+              <div className="absolute left-4 -translate-x-1/2 w-5 h-5 rounded-full" style={{ background: "var(--input-bg)" }} />
+              <div className="rounded-2xl p-4 space-y-3" style={{ background: "var(--input-bg)" }}>
+                <div className="h-3 w-24 rounded-full" style={{ background: "var(--glass-border)" }} />
+                <div className="h-5 w-48 rounded-full" style={{ background: "var(--glass-border)" }} />
+                <div className="h-3 w-full rounded-full" style={{ background: "var(--glass-border)" }} />
+              </div>
+            </div>
+          ))}
+          {!loading && memories.map((m) => (
             <div key={m.id} className="relative pl-14">
               <div className="absolute left-4 -translate-x-1/2 w-5 h-5 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 border-2 border-[var(--timeline-dot-border)] flex items-center justify-center text-xs z-10">
                 {TYPE_ICONS[m.type] || "💛"}
@@ -167,7 +183,7 @@ export default function TimelinePage() {
               </div>
             </div>
           ))}
-          {memories.length === 0 && (
+          {!loading && memories.length === 0 && (
             <div className="text-center text-[var(--muted-subtle)] py-20">
               <Camera size={48} className="mx-auto mb-4 opacity-30" />
               <p>ยังไม่มีความทรงจำ เพิ่มอันแรกเลย!</p>
