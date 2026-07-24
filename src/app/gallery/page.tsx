@@ -14,6 +14,7 @@ interface Photo {
 export default function GalleryPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [coupleId, setCoupleId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [pending, setPending] = useState<{ url: string; publicId: string } | null>(null);
   const [caption, setCaption] = useState("");
@@ -25,7 +26,12 @@ export default function GalleryPage() {
     fetch("/api/couple").then(r => r.json()).then(d => {
       if (d?.id) {
         setCoupleId(d.id);
-        fetch(`/api/photos?coupleId=${d.id}`).then(r => r.json()).then(setPhotos);
+        fetch(`/api/photos?coupleId=${d.id}`).then(r => r.json()).then(data => {
+          setPhotos(data);
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
       }
     });
   }, []);
@@ -112,7 +118,10 @@ export default function GalleryPage() {
 
       {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        {photos.map(p => (
+        {loading && Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="aspect-square rounded-2xl animate-pulse" style={{ background: "var(--input-bg)" }} />
+        ))}
+        {!loading && photos.map(p => (
           <div
             key={p.id}
             onClick={() => setSelected(p)}
@@ -124,7 +133,7 @@ export default function GalleryPage() {
             </div>
           </div>
         ))}
-        {photos.length === 0 && (
+        {!loading && photos.length === 0 && (
           <div className="col-span-full text-center py-20 text-[var(--muted-subtle)]">
             ยังไม่มีรูป เพิ่มรูปแรกเลย! 📸
           </div>
