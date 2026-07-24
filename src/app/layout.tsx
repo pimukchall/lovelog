@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Prompt } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/Nav";
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ThemeProvider>
             <Nav />
             <main className="flex-1">{children}</main>
+            <Analytics />
             <footer className="text-center py-5 text-xs space-y-2" style={{ color: "var(--muted)", borderTop: "1px solid var(--glass-border)" }}>
               <div>พัฒนาโดย Pimuk Artharnnarong &nbsp;·&nbsp;{" "}
                 <a href="/privacy" className="underline hover:opacity-80 transition-opacity">นโยบายความเป็นส่วนตัว</a>
