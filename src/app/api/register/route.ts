@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { authRatelimit } from "@/lib/ratelimit";
+import { getAuthRatelimit } from "@/lib/ratelimit";
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for") ?? "anonymous";
-  const { success } = await authRatelimit.limit(ip);
+  const { success } = await getAuthRatelimit().limit(ip);
   if (!success) return NextResponse.json({ error: "ลองใหม่อีกครั้งในอีกสักครู่" }, { status: 429 });
 
   const { email, password } = await req.json();
