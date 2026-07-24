@@ -139,8 +139,8 @@ export default function SettingsPage() {
   const inviteUrl = inviteToken ? `${typeof window !== "undefined" ? window.location.origin : ""}/join/${inviteToken}` : "";
 
   const avatarInput = (slot: "p1" | "p2") => (
-    <label className="relative cursor-pointer group">
-      <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center"
+    <label className="cursor-pointer group">
+      <div className="relative w-20 h-20 rounded-full overflow-hidden flex items-center justify-center"
         style={{ background: "var(--input-bg)", border: "2px solid var(--glass-border)" }}>
         {(slot === "p1" ? photos.person1PhotoUrl : photos.person2PhotoUrl) ? (
           <Image src={(slot === "p1" ? photos.person1PhotoUrl : photos.person2PhotoUrl)!}
