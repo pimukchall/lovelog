@@ -114,9 +114,16 @@ export default function PostsPage() {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [commentText, setCommentText] = useState<Record<string, string>>({});
   const [commentSaving, setCommentSaving] = useState<string | null>(null);
+  const [couple, setCouple] = useState<{ userId: string; person1Name: string; person2Name: string } | null>(null);
   const myId = session?.user?.id;
 
+  function authorName(authorId: string) {
+    if (!couple) return authorId === myId ? "คุณ" : "คนรัก";
+    return authorId === couple.userId ? couple.person1Name : couple.person2Name;
+  }
+
   useEffect(() => {
+    fetch("/api/couple").then(r => r.json()).then(d => { if (d?.id) setCouple(d); });
     fetch("/api/posts").then(r => r.json()).then(data => {
       setPosts(Array.isArray(data) ? data : []);
       setLoading(false);
@@ -281,7 +288,7 @@ export default function PostsPage() {
               {/* Header */}
               <div className="flex items-center justify-between">
                 <span className="text-xs" style={{ color: "var(--muted)" }}>
-                  {post.authorId === myId ? "คุณ" : "คนรัก"} · {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: th })}
+                  {authorName(post.authorId)} · {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: th })}
                   {post.updatedAt !== post.createdAt && <span className="ml-1">(แก้ไขแล้ว)</span>}
                 </span>
                 {post.authorId === myId && (
@@ -317,7 +324,7 @@ export default function PostsPage() {
                   <div key={c.id} className="flex items-start gap-2 group/comment">
                     <div className="flex-1">
                       <span className="text-xs font-medium mr-2" style={{ color: "var(--accent)" }}>
-                        {c.authorId === myId ? "คุณ" : "คนรัก"}
+                        {authorName(c.authorId)}
                       </span>
                       <span className="text-sm" style={{ color: "var(--foreground)" }}>{c.content}</span>
                     </div>
