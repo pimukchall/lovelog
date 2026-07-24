@@ -34,6 +34,7 @@ model Couple {
   photos          Photo[]
   memories        Memory[]
   familyMembers   FamilyMember[]
+  posts           Post[]
 }
 
 model Photo {
@@ -78,4 +79,16 @@ model FamilyMember {
   publicId  String?
   order     Int      @default(0)
   createdAt DateTime @default(now())
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  coupleId  String
+  couple    Couple   @relation(fields: [coupleId], references: [id])
+  authorId  String
+  content   String   @db.Text
+  imageUrl  String?
+  publicId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

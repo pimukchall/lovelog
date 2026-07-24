@@ -54,6 +54,27 @@ export async function POST(req: Request) {
   return NextResponse.json(photo);
 }
 
+export async function PUT(req: Request) {
+  const userId = await getSessionUserId();
+  if (!userId) return NextResponse.json(null, { status: 401 });
+
+  const body = await req.json();
+  const photo = await prisma.photo.findUnique({ where: { id: body.id }, include: { couple: true } });
+  const c = photo?.couple;
+  if (!c || (c.userId !== userId && c.partnerUserId !== userId)) {
+    return NextResponse.json(null, { status: 403 });
+  }
+
+  const updated = await prisma.photo.update({
+    where: { id: body.id },
+    data: {
+      ...(body.caption !== undefined && { caption: body.caption }),
+      ...(body.takenAt !== undefined && { takenAt: body.takenAt ? new Date(body.takenAt) : null }),
+    },
+  });
+  return NextResponse.json(updated);
+}
+
 export async function DELETE(req: Request) {
   const userId = await getSessionUserId();
   if (!userId) return NextResponse.json(null, { status: 401 });
