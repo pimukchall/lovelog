@@ -10,6 +10,7 @@ export async function GET() {
   const posts = await prisma.post.findMany({
     where: { couple: { OR: [{ userId }, { partnerUserId: userId }] } },
     orderBy: { createdAt: "desc" },
+    include: { comments: { orderBy: { createdAt: "asc" } }, reactions: true },
   });
   return NextResponse.json(posts);
 }

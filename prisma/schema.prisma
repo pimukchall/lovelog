@@ -82,13 +82,34 @@ model FamilyMember {
 }
 
 model Post {
-  id        String   @id @default(cuid())
+  id        String         @id @default(cuid())
   coupleId  String
-  couple    Couple   @relation(fields: [coupleId], references: [id])
+  couple    Couple         @relation(fields: [coupleId], references: [id])
   authorId  String
-  content   String   @db.Text
+  content   String         @db.Text
   imageUrl  String?
   publicId  String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  comments  PostComment[]
+  reactions PostReaction[]
+}
+
+model PostComment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  content   String   @db.Text
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+}
+
+model PostReaction {
+  id       String @id @default(cuid())
+  postId   String
+  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId String
+  emoji    String
+
+  @@unique([postId, authorId, emoji])
 }
