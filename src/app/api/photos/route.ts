@@ -10,6 +10,8 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const coupleId = searchParams.get("coupleId");
   const memoryId = searchParams.get("memoryId");
+  const cursor = searchParams.get("cursor");
+  const limit = 20;
 
   const photos = await prisma.photo.findMany({
     where: {
@@ -17,9 +19,16 @@ export async function GET(req: Request) {
       ...(coupleId ? { coupleId } : {}),
       ...(memoryId ? { memoryId } : {}),
     },
-    orderBy: { takenAt: "desc" },
+    orderBy: { createdAt: "desc" },
+    take: limit + 1,
+    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
   });
-  return NextResponse.json(photos);
+
+  const hasMore = photos.length > limit;
+  if (hasMore) photos.pop();
+  const nextCursor = hasMore ? photos[photos.length - 1]?.id : null;
+
+  return NextResponse.json({ photos, nextCursor });
 }
 
 export async function POST(req: Request) {

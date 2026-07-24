@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, Trash2, X, Loader2 } from "lucide-react";
 import Image from "next/image";
 import PhotoUploader from "@/components/PhotoUploader";
@@ -15,37 +15,62 @@ export default function GalleryPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [coupleId, setCoupleId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [pending, setPending] = useState<{ url: string; publicId: string } | null>(null);
   const [caption, setCaption] = useState("");
   const [takenAt, setTakenAt] = useState("");
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<Photo | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const fetchPhotos = useCallback(async (id: string, cursor?: string) => {
+    const url = `/api/photos?coupleId=${id}${cursor ? `&cursor=${cursor}` : ""}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return data as { photos: Photo[]; nextCursor: string | null };
+  }, []);
 
   useEffect(() => {
-    fetch("/api/couple").then(r => r.json()).then(d => {
+    fetch("/api/couple").then(r => r.json()).then(async d => {
       if (d?.id) {
         setCoupleId(d.id);
-        fetch(`/api/photos?coupleId=${d.id}`).then(r => r.json()).then(data => {
-          setPhotos(data);
-          setLoading(false);
-        });
-      } else {
-        setLoading(false);
+        const data = await fetchPhotos(d.id);
+        setPhotos(data.photos);
+        setNextCursor(data.nextCursor);
       }
+      setLoading(false);
     });
-  }, []);
+  }, [fetchPhotos]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !coupleId) return;
+
+    const observer = new IntersectionObserver(async (entries) => {
+      if (!entries[0].isIntersecting || loadingMore || !nextCursor) return;
+      setLoadingMore(true);
+      const data = await fetchPhotos(coupleId, nextCursor);
+      setPhotos(prev => [...prev, ...data.photos]);
+      setNextCursor(data.nextCursor);
+      setLoadingMore(false);
+    }, { threshold: 0.1 });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [coupleId, nextCursor, loadingMore, fetchPhotos]);
 
   async function addPhoto(e: React.FormEvent) {
     e.preventDefault();
     if (!coupleId || !pending) return;
     setSaving(true);
-    const res = await fetch("/api/photos", {
+    const photo = await fetch("/api/photos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ coupleId, url: pending.url, publicId: pending.publicId, caption, takenAt: takenAt || null }),
-    });
-    const photo = await res.json();
+    }).then(r => r.json());
     setPhotos(prev => [photo, ...prev]);
     setShowAdd(false);
     setPending(null);
@@ -139,6 +164,19 @@ export default function GalleryPage() {
           </div>
         )}
       </div>
+
+      {/* Infinite scroll sentinel */}
+      <div ref={sentinelRef} className="h-4" />
+      {loadingMore && (
+        <div className="flex justify-center py-4">
+          <Loader2 size={24} className="animate-spin" style={{ color: "var(--accent)" }} />
+        </div>
+      )}
+      {!loading && !nextCursor && photos.length > 0 && (
+        <p className="text-center text-xs py-2" style={{ color: "var(--muted)" }}>
+          รูปทั้งหมด {photos.length} รูป
+        </p>
+      )}
     </div>
   );
 }
