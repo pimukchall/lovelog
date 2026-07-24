@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💕 Lovelog
 
-## Getting Started
+แอปบันทึกความรักสำหรับคู่รัก — เก็บรูปภาพ ความทรงจำ นับครบรอบ และผังครอบครัว
 
-First, run the development server:
+🔗 **Production:** https://pimuk-dna.vercel.app
+
+---
+
+## Features
+
+- 📸 **Photo Gallery** — อัปโหลดและจัดการรูปภาพคู่รัก (Cloudinary)
+- 🗓 **Anniversary Tracking** — นับครบรอบรายเดือนและรายปีอัตโนมัติ
+- 📅 **Timeline** — บันทึกความทรงจำสำคัญพร้อมรูปภาพ
+- 🌳 **Family Tree** — ผังครอบครัว พ่อแม่ → ลูกๆ
+- 👫 **Partner Invite** — ส่งลิงก์เชิญคู่รักมาใช้ร่วมกัน
+- 🔐 **Auth** — Email + Password, Forgot Password ผ่าน Resend
+- 🌙 **Dark / Light Theme** — Dark Purple (default) / Light Green
+- 🗑 **Account Deletion** — ลบบัญชีและข้อมูลทั้งหมดได้เอง
+- ☕ **Ko-fi Donate** — [ko-fi.com/pimuk](https://ko-fi.com/pimuk)
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 15 App Router |
+| Database | MySQL 8 (Railway / Docker) |
+| ORM | Prisma 5 |
+| Auth | NextAuth.js (JWT) |
+| Images | Cloudinary |
+| Email | Resend |
+| Styling | Tailwind CSS + CSS Variables |
+| Font | Prompt (Thai + Latin) |
+| Deploy | Vercel |
+
+---
+
+## Local Development
+
+### Prerequisites
+
+- Node.js 20+
+- Docker Desktop
+
+### Setup
 
 ```bash
+# 1. Clone
+git clone https://github.com/pimukchall/lovelog.git
+cd lovelog
+
+# 2. Install dependencies
+npm install
+
+# 3. Start MySQL
+docker compose up -d
+
+# 4. Copy env
+cp .env.example .env
+# แก้ไขค่าใน .env ให้ครบ
+
+# 5. Push schema
+npx prisma db push
+
+# 6. Run dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# เปิด http://localhost:3005
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+DATABASE_URL=mysql://root:password@localhost:3311/pimuk_dna
+AUTH_SECRET=<random-secret>
+NEXTAUTH_URL=http://localhost:3005
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+CLOUDINARY_CLOUD_NAME=<your-cloud>
+CLOUDINARY_API_KEY=<your-key>
+CLOUDINARY_API_SECRET=<your-secret>
 
-## Learn More
+RESEND_API_KEY=<your-key>
+RESEND_FROM=Lovelog <onboarding@resend.dev>
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Branching
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Branch | Purpose |
+|--------|---------|
+| `main` | Production (auto-deploy to Vercel) |
+| `dev` | Development — merge ไป main เมื่อพร้อม |
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Developer
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+พัฒนาโดย **Pimuk Artharnnarong**
+📧 pimuk.artharnnarong@gmail.com
+☕ [ko-fi.com/pimuk](https://ko-fi.com/pimuk)
