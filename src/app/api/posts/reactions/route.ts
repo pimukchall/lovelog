@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUserId } from "@/lib/coupleAuth";
 
-// Toggle reaction — ถ้ามีแล้วลบ, ถ้าไม่มีสร้าง
+// ถ้ายังไม่มี reaction หรือ emoji ต่างกัน → upsert
+// ถ้า emoji เดิม → ลบออก (toggle off)
 export async function POST(req: Request) {
   const userId = await getSessionUserId();
   if (!userId) return NextResponse.json(null, { status: 401 });
@@ -17,17 +18,27 @@ export async function POST(req: Request) {
     return NextResponse.json(null, { status: 403 });
   }
 
-  const existing = await prisma.postReaction.findUnique({
-    where: { postId_authorId_emoji: { postId: body.postId, authorId: userId, emoji: body.emoji } },
+  const existing = await prisma.postReaction.findFirst({
+    where: { postId: body.postId, authorId: userId },
   });
 
-  if (existing) {
+  if (existing && existing.emoji === body.emoji) {
+    // กด emoji เดิม = ยกเลิก
     await prisma.postReaction.delete({ where: { id: existing.id } });
-    return NextResponse.json({ action: "removed" });
+    return NextResponse.json({ action: "removed", emoji: body.emoji });
   }
 
-  await prisma.postReaction.create({
+  // upsert — สร้างใหม่หรือเปลี่ยน emoji
+  if (existing) {
+    const reaction = await prisma.postReaction.update({
+      where: { id: existing.id },
+      data: { emoji: body.emoji },
+    });
+    return NextResponse.json({ action: "added", emoji: reaction.emoji });
+  }
+
+  const reaction = await prisma.postReaction.create({
     data: { postId: body.postId, authorId: userId, emoji: body.emoji },
   });
-  return NextResponse.json({ action: "added" });
+  return NextResponse.json({ action: "added", emoji: reaction.emoji });
 }
