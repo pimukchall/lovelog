@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, Pencil, X, Loader2, BookOpen, Send } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -49,8 +49,21 @@ export default function PostsPage() {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [commentText, setCommentText] = useState<Record<string, string>>({});
   const [commentSaving, setCommentSaving] = useState<string | null>(null);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState<string | null>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
 
   const myId = session?.user?.id;
+
+  // ปิด emoji picker เมื่อคลิกนอก
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setEmojiPickerOpen(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   useEffect(() => {
     fetch("/api/posts").then(r => r.json()).then(data => {
@@ -265,18 +278,22 @@ export default function PostsPage() {
                   </button>
                 ))}
                 {/* Add reaction picker */}
-                <div className="relative group/emoji">
-                  <button className="flex items-center gap-1 px-2.5 py-1 rounded-full text-sm transition-all hover:bg-white/5"
+                <div className="relative" ref={emojiPickerOpen === post.id ? emojiPickerRef : null}>
+                  <button
+                    onClick={() => setEmojiPickerOpen(emojiPickerOpen === post.id ? null : post.id)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-sm transition-all hover:bg-white/5"
                     style={{ border: "1px solid var(--glass-border)", color: "var(--muted)" }}>
                     + 😊
                   </button>
-                  <div className="absolute bottom-full left-0 mb-2 hidden group-hover/emoji:flex gap-1 p-2 rounded-xl shadow-xl z-10"
-                    style={{ background: "var(--nav-bg)", border: "1px solid var(--glass-border)" }}>
-                    {EMOJIS.map(emoji => (
-                      <button key={emoji} onClick={() => toggleReaction(post.id, emoji)}
-                        className="text-xl hover:scale-125 transition-transform p-0.5">{emoji}</button>
-                    ))}
-                  </div>
+                  {emojiPickerOpen === post.id && (
+                    <div className="absolute bottom-full left-0 mb-2 flex gap-1 p-2 rounded-xl shadow-xl z-10"
+                      style={{ background: "var(--nav-bg)", border: "1px solid var(--glass-border)" }}>
+                      {EMOJIS.map(emoji => (
+                        <button key={emoji} onClick={() => { toggleReaction(post.id, emoji); setEmojiPickerOpen(null); }}
+                          className="text-xl hover:scale-125 transition-transform p-0.5">{emoji}</button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
